@@ -1,0 +1,944 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Alliance Shop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;700&family=JetBrains+Mono:wght@500&display=swap">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>
+/* Layout: sticky bar, wordmark panel, search + category chips, card grid, bottom sheets, full-screen admin */
+:root{
+  --bg:#F2F6FE; --surface:#FFFFFF; --surface2:#E7EEFC; --ink:#0A1A3F; --ink2:#52638A; --line:#D3DFF5;
+  --accent:#1F5BFF; --accent-ink:#FFFFFF; --accent-soft:#DBE6FF; --grid:rgba(31,91,255,.08);
+  --glow:rgba(31,91,255,.22); --good:#0F7A57; --warn:#A8660B; --danger:#C23A30; --shadow:0 10px 30px rgba(15,40,110,.12);
+  --f-display:'Unbounded','Onest',system-ui,sans-serif; --f-body:'Onest',system-ui,-apple-system,'Segoe UI',sans-serif; --f-mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#060D21; --surface:#0D1938; --surface2:#142550; --ink:#EAF0FF; --ink2:#93A6D2; --line:#1F3266;
+  --accent:#4C86FF; --accent-ink:#04122E; --accent-soft:#17306E; --grid:rgba(110,160,255,.07);
+  --glow:rgba(76,134,255,.28); --good:#4ADBA6; --warn:#F0B35A; --danger:#FF7B70; --shadow:0 12px 34px rgba(0,0,0,.45); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#060D21; --surface:#0D1938; --surface2:#142550; --ink:#EAF0FF; --ink2:#93A6D2; --line:#1F3266;
+  --accent:#4C86FF; --accent-ink:#04122E; --accent-soft:#17306E; --grid:rgba(110,160,255,.07);
+  --glow:rgba(76,134,255,.28); --good:#4ADBA6; --warn:#F0B35A; --danger:#FF7B70; --shadow:0 12px 34px rgba(0,0,0,.45); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-body);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+body.lock{overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:980px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* top bar */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;align-items:center;gap:12px;padding-block:10px}
+.brand{display:flex;align-items:center;gap:10px;background:none;border:0;padding:0;text-align:left;min-width:0;-webkit-user-select:none;user-select:none}
+.logo{width:36px;height:36px;border-radius:11px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex:none;box-shadow:0 6px 18px var(--glow)}
+.logo svg{width:22px;height:22px}
+.brand b{font:700 15px/1 var(--f-display);letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spacer{flex:1}
+.cart-btn{position:relative;display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 12px;font-weight:600}
+.cart-btn .n{min-width:20px;height:20px;border-radius:10px;background:var(--accent);color:var(--accent-ink);font-size:12px;display:grid;place-items:center;padding:0 5px}
+.cart-btn .n[hidden]{display:none}
+
+/* wordmark panel */
+.hero{margin-top:16px;border-radius:20px;padding:22px 20px;border:1px solid var(--line);position:relative;overflow:hidden;
+  background:
+    radial-gradient(120% 140% at 100% 0%,var(--glow),transparent 55%),
+    linear-gradient(var(--grid) 1px,transparent 1px) 0 0/22px 22px,
+    linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/22px 22px,
+    var(--surface)}
+.hero h1{margin:0;font:700 clamp(26px,7vw,40px)/1.05 var(--f-display);letter-spacing:-.01em;text-wrap:balance}
+.hero h1 span{color:var(--accent)}
+.hero p{margin:10px 0 0;color:var(--ink2);max-width:46ch}
+
+/* controls */
+.controls{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.search{position:relative}
+.search input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 14px 12px 40px}
+.search svg{position:absolute;left:13px;top:50%;translate:0 -50%;width:18px;height:18px;color:var(--ink2)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--ink2);border-radius:999px;padding:7px 14px;font-weight:500}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+
+/* products */
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:12px;margin-top:14px}
+.card{display:flex;flex-direction:column;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;min-width:0}
+.card-top{display:flex;gap:12px;justify-content:space-between;align-items:flex-start;cursor:pointer;background:none;border:0;padding:0;text-align:left;width:100%}
+.card h3{margin:0;font-size:16px;line-height:1.25;font-weight:600;overflow-wrap:anywhere}
+.badge{display:inline-block;margin-bottom:6px;background:var(--accent-soft);color:var(--accent);border-radius:6px;padding:2px 8px;font:500 11px/1.5 var(--f-mono);letter-spacing:.04em;text-transform:uppercase}
+.specs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.spec{font:500 11.5px/1 var(--f-mono);color:var(--ink2);background:var(--surface2);border-radius:6px;padding:5px 7px}
+.price{text-align:right;flex:none}
+.price b{display:block;font:700 18px/1.1 var(--f-display);white-space:nowrap}
+.price s{display:block;color:var(--ink2);font-size:12px;margin-top:3px;white-space:nowrap}
+.card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:auto}
+.stock{font-size:12.5px;color:var(--ink2)}
+.stock.low{color:var(--warn)} .stock.out{color:var(--danger)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 16px;font-weight:600;transition:transform .12s}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--danger);border-color:var(--danger);background:transparent}
+.btn.sm{padding:7px 12px;font-size:13.5px;border-radius:10px}
+.btn.block{width:100%}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.step{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
+.step button{width:38px;height:38px;border:0;background:none;font-size:18px;font-weight:600}
+.step span{min-width:30px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums}
+.empty{grid-column:1/-1;text-align:center;color:var(--ink2);padding:40px 12px;border:1px dashed var(--line);border-radius:16px}
+
+/* bottom menu */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.nav .wrap{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding-block:6px}
+.nav button{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;border:0;background:none;color:var(--ink2);font-size:11.5px;font-weight:600;padding:6px 2px;border-radius:12px}
+.nav button svg{width:22px;height:22px}
+.nav button[aria-current="page"]{color:var(--accent)}
+.nav button[aria-current="page"]::before{content:"";position:absolute;top:-7px;width:28px;height:3px;border-radius:3px;background:var(--accent)}
+.nav .dot{position:absolute;top:1px;left:calc(50% + 6px);min-width:17px;height:17px;border-radius:9px;background:var(--accent);color:var(--accent-ink);font-size:10.5px;display:grid;place-items:center;padding:0 4px}
+.page{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+.page h2.pt{margin:18px 0 4px;font:700 22px/1.15 var(--f-display)}
+.addr{font:500 13px/1.45 var(--f-mono);word-break:break-all;background:var(--surface2);border-radius:10px;padding:10px 12px;user-select:all}
+.amount{font:700 22px/1.1 var(--f-display);overflow-wrap:anywhere}
+.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.faq{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.faq details{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.faq summary{font-weight:600;cursor:pointer}
+
+/* game */
+.slot{margin-top:12px;border:1px solid var(--line);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:14px;background:radial-gradient(120% 90% at 50% 0%,var(--glow),transparent 62%),var(--surface)}
+.reels{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.reel{aspect-ratio:3/4;max-height:150px;border-radius:14px;background:var(--bg);border:2px solid var(--line);display:grid;place-items:center;font:700 clamp(44px,16vw,68px)/1 var(--f-display);color:var(--accent);overflow:hidden;font-variant-numeric:tabular-nums;box-shadow:inset 0 8px 18px rgba(0,0,0,.12)}
+.reel.spin span{filter:blur(1.2px);animation:reelTick .07s linear infinite}
+.reel.stop{animation:reelStop .25s ease-out}
+.slot.win .reel{border-color:var(--good);box-shadow:0 0 0 3px var(--accent-soft),0 0 28px var(--glow);animation:winPulse .7s ease-in-out 3}
+@keyframes reelTick{from{transform:translateY(-12%)}to{transform:translateY(12%)}}
+@keyframes reelStop{0%{transform:scale(1.08)}100%{transform:none}}
+@keyframes winPulse{50%{transform:scale(1.06)}}
+.slot-status{min-height:1.4em;text-align:center;font-weight:600;overflow-wrap:anywhere}
+.slot-status.win{color:var(--good)}
+.slot-meta{display:flex;justify-content:space-between;gap:10px;color:var(--ink2);font-size:13px}
+/* sheet */
+.backdrop{position:fixed;inset:0;z-index:60;background:rgba(3,10,30,.55);display:flex;align-items:flex-end;justify-content:center;animation:fade .15s}
+.sheet{width:100%;max-width:560px;max-height:92%;display:flex;flex-direction:column;background:var(--bg);border-radius:22px 22px 0 0;border:1px solid var(--line);border-bottom:0;animation:rise .2s ease-out;padding-bottom:env(safe-area-inset-bottom,0px)}
+.sheet-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px 8px}
+.sheet-h h2{margin:0;font:700 17px/1.2 var(--f-display);overflow-wrap:anywhere}
+.sheet-b{padding:6px 18px 20px;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
+.icon-btn{flex:none;width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-size:20px;line-height:1}
+@keyframes fade{from{opacity:0}} @keyframes rise{from{transform:translateY(30px);opacity:.6}}
+@media (min-width:700px){.backdrop{align-items:center}.sheet{border-radius:22px;border-bottom:1px solid var(--line)}}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:0}
+.kv dt{color:var(--ink2)} .kv dd{margin:0;text-align:right;font-weight:500;overflow-wrap:anywhere}
+.desc{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.line{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)}
+.line:last-child{border:0}
+.line .nm{min-width:0;flex:1;overflow-wrap:anywhere;font-weight:500}
+.line .nm small{display:block;color:var(--ink2);font-weight:400}
+.total{display:flex;justify-content:space-between;align-items:baseline;font-weight:600}
+.total b{font:700 20px var(--f-display)}
+.note{background:var(--surface2);border-radius:12px;padding:12px 14px;color:var(--ink2);font-size:13.5px;overflow-wrap:anywhere}
+.note.warn{color:var(--warn)}
+.toast{position:fixed;left:50%;translate:-50% 0;bottom:calc(90px + env(safe-area-inset-bottom,0px));z-index:90;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:500;max-width:88vw;text-align:center;box-shadow:var(--shadow);animation:fade .15s}
+.foot{padding:0 0 30px;color:var(--ink2);font-size:12.5px;text-align:center}
+
+/* forms */
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label{font-size:12.5px;color:var(--ink2);font-weight:500}
+.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px;min-width:0}
+.field textarea{min-height:96px;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.check{display:flex;gap:10px;align-items:center;font-weight:500}
+.check input{width:20px;height:20px;accent-color:var(--accent)}
+
+/* admin */
+.admin{position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;padding-top:env(safe-area-inset-top,0px)}
+.admin-bar{position:sticky;top:0;z-index:2;background:var(--bg);border-bottom:1px solid var(--line)}
+.admin-bar .wrap{display:flex;align-items:center;gap:10px;padding-block:10px;flex-wrap:wrap}
+.admin-bar h2{margin:0;font:700 15px var(--f-display)}
+.state{font-size:12.5px;color:var(--ink2)} .state.dirty{color:var(--warn)}
+.tabs{display:flex;gap:6px;padding-block:12px;overflow-x:auto;scrollbar-width:none}
+.tab{flex:none;white-space:nowrap;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 14px;font-weight:600;color:var(--ink2)}
+.tab[aria-selected="true"]{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.panel{display:flex;flex-direction:column;gap:12px;padding-bottom:calc(60px + env(safe-area-inset-bottom,0px))}
+.arow{display:flex;gap:10px;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;min-width:0}
+.arow.off{opacity:.55}
+.arow{flex-wrap:wrap}
+.arow .t{min-width:0;flex:1 1 100%}
+.arow .acts{justify-content:flex-start}
+.arow .t b{display:block;overflow-wrap:anywhere}
+.arow .t small{color:var(--ink2)}
+.acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.card-box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.card-box h3{margin:0;font-size:14px;color:var(--ink2);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.mono{font-family:var(--f-mono);font-size:12.5px}
+.menu-item{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:14px 16px;text-decoration:none;color:var(--ink)}
+.menu-item b{font-weight:600} .menu-item small{color:var(--ink2)}
+.addr{font:500 12.5px/1.5 var(--f-mono);background:var(--surface2);border-radius:10px;padding:10px 12px;overflow-wrap:anywhere;-webkit-user-select:all;user-select:all}
+.paybox{display:flex;flex-direction:column;gap:10px;border:1px solid var(--accent);border-radius:14px;padding:14px;background:var(--surface)}
+.paybox .big{font:700 18px/1.2 var(--f-display);overflow-wrap:anywhere}
+/* motion */
+.page{animation:pageIn .35s ease-out}
+@keyframes pageIn{from{opacity:0;transform:translateY(8px)}}
+@keyframes up{from{opacity:0;transform:translateY(16px)}}
+@keyframes fadeIn{from{opacity:0}}
+@keyframes navIn{from{transform:translateY(100%)}}
+.pre .bar,.pre .nav,.pre .page{opacity:0}
+.in .bar{animation:fadeIn .5s both}
+.in .nav{animation:navIn .5s .25s cubic-bezier(.2,.8,.3,1) both}
+.in .hero{animation:up .6s both}
+.in .controls{animation:up .6s .08s both}
+.in .card{animation:up .5s both;animation-delay:calc(.14s + var(--i,0)*45ms)}
+.card{transition:transform .2s,border-color .2s}
+.card:active{transform:scale(.99)}
+@media (hover:hover){.card:hover{transform:translateY(-2px);border-color:var(--accent)}}
+.hero>*{position:relative;z-index:1}
+.hero::after{content:"";position:absolute;inset:-40%;background:radial-gradient(closest-side,var(--glow),transparent);opacity:.45;animation:drift 9s ease-in-out infinite alternate;pointer-events:none}
+@keyframes drift{from{transform:translate(-12%,8%)}to{transform:translate(14%,-6%)}}
+.logo{position:relative;overflow:hidden}
+.logo::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%);transform:translateX(-120%);animation:shine 5s 2.5s infinite}
+@keyframes shine{0%,70%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+.dot.pop{animation:pop .35s}
+@keyframes pop{0%{transform:scale(.4)}60%{transform:scale(1.3)}100%{transform:scale(1)}}
+.toast{animation:up .25s}
+
+/* intro: hooded blade-runner cuts the welcome text */
+.splash{position:fixed;inset:0;z-index:80;overflow:hidden;display:grid;place-items:center;background:radial-gradient(90% 60% at 50% 45%,#0f2a66 0%,#07122e 55%,#030816 100%);color:#EAF0FF;transition:opacity .45s;cursor:pointer}
+.splash.sp-out{opacity:0;pointer-events:none}
+.sp-grid{position:absolute;inset:0;background:linear-gradient(rgba(110,160,255,.07) 1px,transparent 1px) 0 0/26px 26px,linear-gradient(90deg,rgba(110,160,255,.07) 1px,transparent 1px) 0 0/26px 26px;-webkit-mask-image:radial-gradient(circle at 50% 50%,#000 15%,transparent 72%);mask-image:radial-gradient(circle at 50% 50%,#000 15%,transparent 72%)}
+.sp-stage{position:relative;width:min(92vw,560px);animation:spIn .6s .15s both}
+@keyframes spIn{from{opacity:0;transform:scale(.96)}}
+.sp-text{display:flex;flex-direction:column;align-items:center;gap:6px;padding:26px 0;text-align:center}
+.sp-top{position:absolute;inset:0;clip-path:polygon(0 0,100% 0,100% 38%,0 62%);animation:spTop 1.1s 1.36s cubic-bezier(.2,.7,.3,1) forwards}
+.sp-bot{clip-path:polygon(0 62%,100% 38%,100% 100%,0 100%);animation:spBot 1.1s 1.36s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes spTop{to{transform:translate(-22px,-30px) rotate(-3deg);opacity:0}}
+@keyframes spBot{to{transform:translate(22px,30px) rotate(3deg);opacity:0}}
+.sp-text small{font:500 clamp(12px,3.4vw,16px)/1.3 var(--f-body);letter-spacing:.22em;text-transform:uppercase;color:#9DB6EE}
+.sp-text strong{font:700 clamp(26px,8.4vw,48px)/1.05 var(--f-display);margin-top:8px;color:#fff;text-shadow:0 0 30px rgba(76,134,255,.55);overflow-wrap:anywhere}
+.sp-slash{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;clip-path:inset(-30% 100% -30% -30%);animation:spCut .42s 1.12s linear forwards,spGone .35s 1.6s forwards;filter:drop-shadow(0 0 8px #6EA0FF)}
+@keyframes spCut{to{clip-path:inset(-30% -30% -30% -30%)}}
+@keyframes spGone{to{opacity:0}}
+.sp-flash{position:absolute;inset:0;background:#8fb4ff;opacity:0;animation:spFlash .4s 1.33s ease-out}
+@keyframes spFlash{0%{opacity:0}15%{opacity:.35}100%{opacity:0}}
+.sp-ass{position:absolute;left:0;top:calc(50% - 72px);width:min(48vw,200px);animation:spRun 1.2s .9s linear both;will-change:transform;filter:drop-shadow(0 0 1px #6EA0FF) drop-shadow(0 0 12px rgba(76,134,255,.7))}
+.sp-ass svg{display:block;width:100%;height:auto}
+.sp-ass.g1{opacity:.3;--fig:#4C86FF;animation-delay:.97s;filter:blur(2px)}
+.sp-ass.g2{opacity:.15;--fig:#4C86FF;animation-delay:1.04s;filter:blur(3px)}
+@keyframes spRun{from{transform:translate(-120%,54px) rotate(-7deg)}to{transform:translate(calc(100vw + 20%),-70px) rotate(-7deg)}}
+.f{fill:var(--fig,#02050d)}
+.fs{fill:none;stroke:var(--fig,#02050d);stroke-linecap:round;stroke-linejoin:round}
+.sp-skip{position:absolute;left:50%;translate:-50% 0;bottom:calc(28px + env(safe-area-inset-bottom,0px));background:none;border:1px solid rgba(157,182,238,.4);color:#9DB6EE;border-radius:999px;padding:7px 16px;font-size:13px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style></head>
+<body>
+<div id="app"></div>
+<script type="application/json" id="shop-data">{"shop":{"name":"Alliance Shop","tagline":"Аккаунты Telegram. Выбери товар, добавь в корзину и напиши продавцу.","contact":"","currency":"₽","note":"Оплата и выдача согласуются в личных сообщениях с продавцом.","pin":"54ca1092","bot":"","info":""},"cats":["Новые","Старые","Premium","Пакеты","Мануалы","Паки моделей","Полезные инструменты"],"items":[{"id":"p1","name":"Аккаунт Telegram, Россия","cat":"Новые","price":150,"old":0,"stock":25,"geo":"Россия (+7)","year":"2026","format":"Номер + код","badge":"Хит","desc":"Пример товара. Измени название, цену и описание в админке.","hidden":false},{"id":"p2","name":"Аккаунт Telegram, Казахстан","cat":"Новые","price":170,"old":0,"stock":12,"geo":"Казахстан (+7)","year":"2026","format":"Номер + код","badge":"","desc":"Пример товара. Измени название, цену и описание в админке.","hidden":false},{"id":"p3","name":"Аккаунт Telegram, США","cat":"Новые","price":260,"old":300,"stock":8,"geo":"США (+1)","year":"2026","format":"Номер + код","badge":"Скидка","desc":"Пример товара. Измени название, цену и описание в админке.","hidden":false},{"id":"p4","name":"Аккаунт 2019 года","cat":"Старые","price":590,"old":0,"stock":4,"geo":"Россия (+7)","year":"2019","format":"Номер + код","badge":"","desc":"Пример товара. Измени название, цену и описание в админке.","hidden":false},{"id":"p5","name":"Аккаунт с Telegram Premium","cat":"Premium","price":890,"old":0,"stock":3,"geo":"Россия (+7)","year":"2024","format":"Номер + код","badge":"Premium","desc":"Пример товара. Измени название, цену и описание в админке.","hidden":false},{"id":"p6","name":"Пакет 10 аккаунтов","cat":"Пакеты","price":1200,"old":1500,"stock":6,"geo":"Россия (+7)","year":"2026","format":"Номер + код","badge":"Опт","desc":"Пример товара. Измени название, цену и описание в админке.","hidden":false}],"pay":[{"id":"c1","coin":"USDT","net":"TRC20","addr":"","rate":0,"dec":2,"on":true},{"id":"c2","coin":"TON","net":"TON","addr":"","rate":0,"dec":3,"on":true},{"id":"c3","coin":"BTC","net":"Bitcoin","addr":"","rate":0,"dec":8,"on":true}],"faq":[{"id":"f1","q":"Как купить?","a":"Выбери товар, добавь в корзину, выбери способ оплаты и переведи сумму. Затем нажми «Я оплатил» и отправь продавцу хеш транзакции."},{"id":"f2","q":"Как быстро выдают товар?","a":"Продавец проверяет перевод вручную и выдаёт товар после подтверждения оплаты."},{"id":"f3","q":"Что делать, если возник вопрос?","a":"Напиши продавцу в Telegram. Контакт указан на этой странице."}],"game":{"on":true,"spins":3,"digits":9}}</script>
+<script id="app-js">
+(function(){
+'use strict';
+var $=function(s,r){return (r||document).querySelector(s)};
+function h(tag,attrs){
+  var e=document.createElement(tag);
+  if(attrs)for(var k in attrs){var v=attrs[k];if(v==null||v===false)continue;
+    if(k==='class')e.className=v;else if(k==='text')e.textContent=v;
+    else if(k.slice(0,2)==='on')e.addEventListener(k.slice(2),v);
+    else if(k==='value')e.value=v;else if(k==='checked')e.checked=!!v;
+    else e.setAttribute(k,v===true?'':v);}
+  for(var i=2;i<arguments.length;i++){var c=arguments[i];(Array.isArray(c)?c:[c]).forEach(function(x){
+    if(x==null||x===false)return;e.append(x.nodeType?x:document.createTextNode(String(x)));});}
+  return e;}
+var LOGO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 20.5 12 3.5l8.5 17"/><path d="M7.6 14.5h8.8"/></svg>';
+var SEARCH='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
+var CART='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2.5l2.2 11h10.1l2-8H6.4"/><circle cx="9" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/></svg>';
+var MENU='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
+function svg(s){var t=document.createElement('span');t.innerHTML=s;t.style.display='contents';return t;}
+
+/* ---------- data ---------- */
+function clone(o){return JSON.parse(JSON.stringify(o))}
+function norm(d){
+  d=d||{};var s=d.shop||{};
+  var out={shop:{name:String(s.name||'Alliance Shop'),tagline:String(s.tagline||''),contact:String(s.contact||''),currency:String(s.currency||'₽'),note:String(s.note||''),pin:String(s.pin||''),bot:String(s.bot||'')},cats:[],items:[]};
+  (d.cats||[]).forEach(function(c){c=String(c).trim();if(c&&out.cats.indexOf(c)<0)out.cats.push(c)});
+  (d.items||[]).forEach(function(i){out.items.push({id:String(i.id||uid()),name:String(i.name||''),cat:String(i.cat||''),price:+i.price||0,old:+i.old||0,stock:Math.max(0,parseInt(i.stock,10)||0),geo:String(i.geo||''),year:String(i.year||''),format:String(i.format||''),badge:String(i.badge||''),desc:String(i.desc||''),hidden:!!i.hidden})});
+  out.pay=[];
+  (d.pay||[]).forEach(function(m){out.pay.push({id:String(m.id||uid()),coin:String(m.coin||''),net:String(m.net||''),addr:String(m.addr||''),memo:String(m.memo||''),rate:Math.max(0,+m.rate||0),dec:Math.min(8,Math.max(0,parseInt(m.dec,10)||0))})});
+  out.shop.info=String(s.info||'');
+  out.pay=[];(d.pay||[]).forEach(function(x){out.pay.push({id:String(x.id||uid()),coin:String(x.coin||''),net:String(x.net||''),addr:String(x.addr||''),rate:Math.max(0,+x.rate||0),dec:Math.min(10,Math.max(0,parseInt(x.dec,10)||0)),on:x.on!==false})});
+  out.faq=[];(d.faq||[]).forEach(function(x){out.faq.push({id:String(x.id||uid()),q:String(x.q||''),a:String(x.a||'')})});
+  var g=d.game||{};out.game={on:g.on!==false,spins:Math.min(20,Math.max(1,parseInt(g.spins,10)||3)),digits:Math.min(9,Math.max(2,parseInt(g.digits,10)||9)),price:String(g.price||'0.15').replace(/[^0-9.]/g,'').slice(0,6)||'0.15'};
+  return out;}
+function uid(){return 'p'+Math.random().toString(36).slice(2,8)}
+function fnv(s){var x=2166136261;for(var i=0;i<s.length;i++){x^=s.charCodeAt(i);x=Math.imul(x,16777619)}return (x>>>0).toString(16)}
+var data;try{data=norm(JSON.parse($('#shop-data').textContent))}catch(e){data=norm({})}
+var draft=null,admin=false;
+try{var sd=sessionStorage.getItem('ash_draft');if(sd){draft=norm(JSON.parse(sd))}admin=sessionStorage.getItem('ash_admin')==='1'}catch(e){}
+if(draft&&JSON.stringify(draft)===JSON.stringify(data))draft=null;
+function cur(){return draft||data}
+function dirty(){return !!draft&&JSON.stringify(draft)!==JSON.stringify(data)}
+function ss(k,v){try{if(v==null)sessionStorage.removeItem(k);else sessionStorage.setItem(k,v)}catch(e){}}
+function touch(){ss('ash_draft',dirty()?JSON.stringify(draft):null);updateBar();renderShop();}
+
+/* ---------- cart (per viewer) ---------- */
+var cart={};try{cart=JSON.parse(localStorage.getItem('ash_cart')||'{}')||{}}catch(e){cart={}}
+function saveCart(){try{localStorage.setItem('ash_cart',JSON.stringify(cart))}catch(e){}}
+function itemById(id){var l=cur().items;for(var i=0;i<l.length;i++)if(l[i].id===id)return l[i];return null}
+function pruneCart(){Object.keys(cart).forEach(function(id){var it=itemById(id);if(!it||it.hidden||it.stock<1){delete cart[id]}else if(cart[id]>it.stock){cart[id]=it.stock}})}
+function setQty(id,q){var it=itemById(id);if(!it)return;q=Math.max(0,Math.min(it.stock,q));if(q)cart[id]=q;else delete cart[id];saveCart();renderShop();}
+function cartLines(){pruneCart();return Object.keys(cart).map(function(id){return {it:itemById(id),q:cart[id]}}).filter(function(l){return l.it})}
+function cartCount(){return cartLines().reduce(function(a,l){return a+l.q},0)}
+function cartTotal(){return cartLines().reduce(function(a,l){return a+l.q*l.it.price},0)}
+function money(n){return new Intl.NumberFormat('ru-RU',{maximumFractionDigits:2}).format(n)+' '+cur().shop.currency}
+
+/* ---------- toast & sheet ---------- */
+var toastT;function toast(m){var o=$('.toast');if(o)o.remove();var t=h('div',{class:'toast',role:'status',text:m});$('#app').append(t);clearTimeout(toastT);toastT=setTimeout(function(){t.remove()},2600)}
+var sheetEl=null;
+function closeSheet(){if(sheetEl){sheetEl.remove();sheetEl=null}if(!$('.admin'))document.body.classList.remove('lock')}
+function openSheet(title,body){closeSheet();
+  var bd=h('div',{class:'backdrop',onclick:function(e){if(e.target===bd)closeSheet()}},
+    h('div',{class:'sheet',role:'dialog','aria-modal':'true','aria-label':title},
+      h('div',{class:'sheet-h'},h('h2',{text:title}),h('button',{class:'icon-btn','aria-label':'Закрыть',onclick:closeSheet,text:'×'})),
+      h('div',{class:'sheet-b'},body)));
+  $('#app').append(bd);sheetEl=bd;document.body.classList.add('lock');return bd;}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSheet()});
+
+/* ---------- shop view ---------- */
+var q='',catSel='',view='shop',payId='',lastN=0;
+var root=$('#app');
+var el={};
+var ICONS={
+  shop:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5 5.5 4h13L20 9.5"/><path d="M4 9.5a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0"/><path d="M5 12.5V20h14v-7.5"/></svg>',
+  cart:CART,
+  pay:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10.5h18"/><circle cx="16.5" cy="14.8" r="1.2"/></svg>',
+  game:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M9 5v14M15 5v14"/><path d="M5.8 12h.1M11.9 12h.1M18 12h.1"/></svg>',
+  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.6v.1"/></svg>'};
+function buildShell(){
+  root.textContent='';
+  var taps=0,tapT;
+  el.brandName=h('b');
+  var brand=h('button',{class:'brand','aria-label':'Alliance Shop',onclick:function(){taps++;clearTimeout(tapT);tapT=setTimeout(function(){taps=0},2500);if(taps>=5){taps=0;askPin()}}},h('span',{class:'logo'},svg(LOGO)),el.brandName);
+  el.cartN=h('span',{class:'n',hidden:true});
+  var cartBtn=h('button',{class:'cart-btn',onclick:function(){go('cart')}},svg(CART),'Корзина',el.cartN);
+  root.append(h('header',{class:'bar'},h('div',{class:'wrap'},brand,h('span',{class:'spacer'}),cartBtn)));
+  el.h1=h('h1');el.tag=h('p');
+  el.search=h('input',{id:'search',type:'search',placeholder:'Поиск по названию, стране, году',autocomplete:'off',oninput:function(e){q=e.target.value.trim().toLowerCase();renderList()}});
+  el.chips=h('div',{class:'chips',role:'group','aria-label':'Категории'});
+  el.list=h('div',{class:'list'});
+  el.pShop=h('main',{class:'wrap page'},h('section',{class:'hero'},el.h1,el.tag),h('div',{class:'controls'},h('label',{class:'search'},svg(SEARCH),el.search),el.chips),el.list);
+  el.pCart=h('main',{class:'wrap page',hidden:true});
+  el.pPay=h('main',{class:'wrap page',hidden:true});
+  el.pInfo=h('main',{class:'wrap page',hidden:true});
+  el.pGame=h('main',{class:'wrap page',hidden:true});
+  root.append(el.pShop,el.pCart,el.pPay,el.pGame,el.pInfo);
+  el.nav=h('nav',{class:'nav','aria-label':'Меню'});root.append(el.nav);
+  el.adminHost=h('div');root.append(el.adminHost);
+}
+function go(v){
+  view=v;el.pShop.hidden=v!=='shop';el.pCart.hidden=v!=='cart';el.pPay.hidden=v!=='pay';el.pInfo.hidden=v!=='info';el.pGame.hidden=v!=='game';
+  renderNav();window.scrollTo(0,0);
+}
+function renderNav(){
+  var n=cartCount();
+  el.nav.textContent='';
+  var w=h('div',{class:'wrap'});
+  [['shop','Каталог'],['cart','Корзина'],['pay','Оплата'],['game','Игра'],['info','Инфо']].forEach(function(t){
+    var b=h('button',{'aria-current':view===t[0]?'page':null,onclick:function(){go(t[0])}},svg(ICONS[t[0]]),t[1]);
+    if(t[0]==='cart'&&n)b.append(h('span',{class:'dot'+(n!==lastN?' pop':''),text:n}));
+    w.append(b)});
+  el.nav.append(w);lastN=n;
+  el.cartN.textContent=n;el.cartN.hidden=!n;
+}
+function renderShop(){
+  var s=cur().shop;
+  el.brandName.textContent=s.name;document.title=s.name;
+  var parts=s.name.split(' ');el.h1.textContent='';
+  if(parts.length>1){el.h1.append(parts.slice(0,-1).join(' ')+' ',h('span',{text:parts[parts.length-1]}))}else el.h1.textContent=s.name;
+  el.tag.textContent=s.tagline;el.tag.hidden=!s.tagline;
+  renderChips();renderList();renderNav();renderCartPage();renderPayPage();renderGamePage();renderInfoPage();
+  if(sheetEl&&sheetEl._paint)sheetEl._paint();
+}
+function visibleItems(){return cur().items.filter(function(i){return !i.hidden})}
+function renderChips(){
+  var cats=cur().cats.filter(function(c){return visibleItems().some(function(i){return i.cat===c})});
+  if(catSel&&cats.indexOf(catSel)<0)catSel='';
+  el.chips.textContent='';
+  [''].concat(cats).forEach(function(c){el.chips.append(h('button',{class:'chip','aria-pressed':String(c===catSel),text:c||'Все',onclick:function(){catSel=c;renderChips();renderList();playEntrance()}}))});
+  el.chips.hidden=cats.length<1;
+}
+function matches(i){
+  if(catSel&&i.cat!==catSel)return false;
+  if(!q)return true;
+  return [i.name,i.geo,i.year,i.format,i.badge,i.desc,i.cat].join(' ').toLowerCase().indexOf(q)>=0;
+}
+function stockNode(i){
+  if(i.stock<1)return h('span',{class:'stock out',text:'Нет в наличии'});
+  return h('span',{class:'stock'+(i.stock<=5?' low':''),text:'В наличии: '+i.stock+' шт.'});
+}
+function specChips(i){return [i.geo,i.year&&('рег. '+i.year),i.format].filter(Boolean).map(function(t){return h('span',{class:'spec',text:t})})}
+function priceNode(i){return h('div',{class:'price'},h('b',{text:money(i.price)}),i.old>i.price?h('s',{text:money(i.old)}):null)}
+function addControl(i){
+  if(i.stock<1)return h('button',{class:'btn sm',disabled:true,text:'Нет в наличии'});
+  var n=cart[i.id]||0;
+  if(!n)return h('button',{class:'btn primary sm',onclick:function(){setQty(i.id,1);toast('Добавлено в корзину')},text:'В корзину'});
+  return h('div',{class:'step'},h('button',{'aria-label':'Меньше',onclick:function(){setQty(i.id,n-1)},text:'−'}),h('span',{text:n}),h('button',{'aria-label':'Больше',onclick:function(){setQty(i.id,n+1)},text:'+'}));
+}
+function renderList(){
+  var items=visibleItems().filter(matches);
+  el.list.textContent='';
+  if(!items.length){el.list.append(h('div',{class:'empty',text:visibleItems().length?'Ничего не найдено. Попробуй другой запрос.':'Товары скоро появятся.'}));return}
+  items.forEach(function(i,n){
+    el.list.append(h('article',{class:'card',style:'--i:'+Math.min(n,12)},
+      h('button',{class:'card-top','aria-label':'Подробнее: '+i.name,onclick:function(){openDetail(i.id)}},
+        h('div',{style:'min-width:0'},i.badge?h('span',{class:'badge',text:i.badge}):null,h('h3',{text:i.name}),h('div',{class:'specs'},specChips(i))),
+        priceNode(i)),
+      h('div',{class:'card-foot'},stockNode(i),addControl(i))));
+  });
+}
+function openDetail(id){
+  var i=itemById(id);if(!i)return;
+  var body=h('div',{style:'display:flex;flex-direction:column;gap:14px'});
+  var foot=h('div',{class:'row'});
+  function paint(){foot.textContent='';foot.append(priceNode(i),addControl(i))}
+  paint();
+  var kv=h('dl',{class:'kv'});
+  [['Категория',i.cat],['Страна',i.geo],['Год регистрации',i.year],['Формат выдачи',i.format]].forEach(function(p){if(p[1]){kv.append(h('dt',{text:p[0]}),h('dd',{text:p[1]}))}});
+  body.append(i.badge?h('div',null,h('span',{class:'badge',text:i.badge})):null,kv.children.length?kv:null,i.desc?h('p',{class:'desc',text:i.desc}):null,stockNode(i),foot);
+  openSheet(i.name,body);
+  sheetEl.dataset.kind='detail';sheetEl.dataset.id=id;
+  var obs=new MutationObserver(function(){});obs.disconnect();
+  sheetEl._paint=paint;
+}
+var payId='';
+function payMethods(){return cur().pay.filter(function(m){return m.addr.trim()})}
+function payLabel(m){return m.coin+(m.net?' ('+m.net+')':'')}
+function payAmount(m,total){return m.rate>0?(total/m.rate).toFixed(m.dec):null}
+function curPay(){return payMethods().filter(function(m){return m.id===payId})[0]||null}
+function contactName(){return cur().shop.contact.trim().replace(/^https?:\/\/t\.me\//i,'').replace(/^@/,'').replace(/[^\w]/g,'')}
+function copyText(t,msg){
+  function fb(){var ta=h('textarea',{style:'position:fixed;opacity:0;top:0'});ta.value=t;document.body.append(ta);ta.select();try{document.execCommand('copy')}catch(e){}ta.remove();toast(msg)}
+  try{navigator.clipboard.writeText(t).then(function(){toast(msg)},fb)}catch(e){fb()}
+}
+function enabledPays(){return cur().pay.filter(function(p){return p.on&&p.addr.trim()})}
+function selPay(){var l=enabledPays();for(var i=0;i<l.length;i++)if(l[i].id===payId)return l[i];return l[0]||null}
+function payAmount(p,total){if(!(p.rate>0))return '';var m=Math.pow(10,p.dec);return (Math.ceil(total/p.rate*m-1e-9)/m).toFixed(p.dec)}
+function orderText(paid){
+  var lines=cartLines(),p=selPay();
+  var t='Здравствуйте! Хочу оформить заказ в '+cur().shop.name+':\n'+lines.map(function(l){return '• '+l.it.name+' × '+l.q+' = '+money(l.q*l.it.price)}).join('\n')+'\nИтого: '+money(cartTotal());
+  if(p){var a=payAmount(p,cartTotal());t+='\nОплата: '+p.coin+' ('+p.net+')'+(a?', сумма '+a+' '+p.coin:'')}
+  if(paid&&p)t+='\nОплатил(а). Хеш транзакции или скриншот пришлю следующим сообщением.';
+  return t;
+}
+function tgOpen(e){var tg=window.Telegram&&window.Telegram.WebApp;if(tg&&tg.openTelegramLink){e.preventDefault();tg.openTelegramLink(this.href)}}
+function botName(){return (cur().shop.bot||'').trim().replace(/^https?:\/\/t\.me\//i,'').replace(/^@/,'').replace(/[^\w]/g,'')}
+function cartCode(){var parts=cartLines().map(function(l){return /^[A-Za-z0-9]+$/.test(l.it.id)?l.it.id+'-'+l.q:null});if(parts.indexOf(null)>=0)return '';var c=parts.join('_');return c.length<=64?c:''}
+function renderCartPage(){
+  var P=el.pCart;P.textContent='';
+  P.append(h('h2',{class:'pt',text:'Корзина'}));
+  var lines=cartLines();
+  if(!lines.length){P.append(h('div',{class:'empty',style:'margin-top:14px'},'Корзина пуста. Выбери товары в каталоге.',h('div',{style:'margin-top:12px'},h('button',{class:'btn primary',onclick:function(){go('shop')},text:'Открыть каталог'}))));return}
+  var box=h('div',{class:'card-box',style:'margin-top:12px'});
+  lines.forEach(function(l){box.append(h('div',{class:'line'},
+    h('div',{class:'nm'},l.it.name,h('small',{text:money(l.it.price)+' за шт.'})),
+    h('div',{class:'step'},h('button',{'aria-label':'Меньше',onclick:function(){setQty(l.it.id,l.q-1)},text:'−'}),h('span',{text:l.q}),h('button',{'aria-label':'Больше',onclick:function(){setQty(l.it.id,l.q+1)},text:'+'}))));});
+  box.append(h('div',{class:'total'},'Итого',h('b',{text:money(cartTotal())})));
+  P.append(box);
+  var pays=enabledPays(),p=selPay();if(p)payId=p.id;
+  var bot=botName();
+  if(bot){
+    var code=cartCode();
+    var cb=h('div',{class:'card-box',style:'margin-top:12px'},h('h3',{text:'Оплата через CryptoBot'}));
+    if(code)cb.append(h('div',{class:'note',text:'Нажми кнопку. Бот пришлёт счёт CryptoBot на '+money(cartTotal())+'. После оплаты он сам подтвердит заказ.'}),
+      h('a',{class:'btn primary block',style:'text-align:center;text-decoration:none',href:'https://t.me/'+bot+'?start='+code,target:'_blank',rel:'noopener',onclick:tgOpen},'Оплатить через CryptoBot'));
+    else cb.append(h('div',{class:'note warn',text:'В корзине слишком много позиций для одного счёта. Оформи заказ частями.'}));
+    P.append(cb);
+  }
+  var pb=h('div',{class:'card-box',style:'margin-top:12px'},h('h3',{text:bot?'Или переведи криптовалюту вручную':'Оплата криптовалютой'}));
+  if(!p){pb.append(h('div',{class:'note',text:'Способы оплаты пока не настроены. Напиши продавцу, он подскажет реквизиты.'}))}
+  else{
+    var chips=h('div',{class:'chips'});
+    pays.forEach(function(x){chips.append(h('button',{class:'chip','aria-pressed':String(x.id===payId),text:x.coin+' · '+x.net,onclick:function(){payId=x.id;renderCartPage()}}))});
+    var a=payAmount(p,cartTotal());
+    pb.append(chips,
+      h('div',{class:'field'},h('label',{text:'Сумма к оплате'}),a?h('div',{class:'row'},h('div',{class:'amount',text:a+' '+p.coin}),h('button',{class:'btn sm',onclick:function(){copyText(a,'Сумма скопирована')},text:'Копировать'})):h('div',{class:'note',text:'Сумму в '+p.coin+' уточни у продавца. Итог в магазине: '+money(cartTotal())})),
+      h('div',{class:'field'},h('label',{text:'Адрес, сеть '+p.net}),h('div',{class:'addr',text:p.addr}),h('div',null,h('button',{class:'btn sm',onclick:function(){copyText(p.addr,'Адрес скопирован')},text:'Копировать адрес'}))),
+      h('div',{class:'note warn',text:'Отправляй только '+p.coin+' по сети '+p.net+'. Перевод в другой сети вернуть нельзя.'}));
+    if(p.rate>0)pb.append(h('div',{class:'state',text:'Курс магазина: 1 '+p.coin+' = '+money(p.rate)}));
+  }
+  if(!bot||pays.length)P.append(pb);
+  var cn=contactName();
+  var ac=h('div',{class:'card-box',style:'margin-top:12px'});
+  if(!bot||pays.length)ac.append(h('div',{class:'note',text:'После перевода нажми кнопку ниже и отправь продавцу хеш транзакции. Продавец проверит оплату и выдаст товар.'}));
+  if(cur().shop.note)ac.append(h('div',{class:'note',text:cur().shop.note}));
+  if(cn)ac.append(h('a',{class:'btn primary block',style:'text-align:center;text-decoration:none',href:'https://t.me/'+cn+'?text='+encodeURIComponent(orderText(true)),target:'_blank',rel:'noopener',onclick:tgOpen},(p?'Я оплатил, написать продавцу':'Написать продавцу')+' @'+cn));
+  else ac.append(h('div',{class:'note warn',text:'Контакт продавца пока не указан. Скопируй заказ и отправь его вручную.'}));
+  ac.append(h('button',{class:'btn block',onclick:function(){copyText(orderText(true),'Заказ скопирован')},text:'Скопировать заказ'}),
+    h('button',{class:'btn ghost block',onclick:function(){cart={};saveCart();renderShop()},text:'Очистить корзину'}));
+  P.append(ac);
+}
+function renderPayPage(){
+  var P=el.pPay;P.textContent='';
+  P.append(h('h2',{class:'pt',text:'Оплата'}),h('p',{style:'color:var(--ink2);margin:4px 0 12px',text:'Принимаем криптовалюту. Платёж проверяет продавец вручную, поэтому после перевода напиши ему.'}));
+  P.append(h('div',{class:'card-box'},h('h3',{text:'Как оплатить'}),h('ol',{class:'steps'},
+    h('li',{text:'Добавь товары в корзину.'}),h('li',{text:'В корзине выбери монету и переведи точную сумму на адрес.'}),h('li',{text:'Нажми «Я оплатил» и отправь продавцу хеш транзакции.'}),h('li',{text:'Продавец проверит перевод и выдаст товар.'}))));
+  var pays=enabledPays();
+  if(!pays.length){P.append(h('div',{class:'empty',style:'margin-top:12px',text:'Реквизиты пока не добавлены. Напиши продавцу.'}));return}
+  P.append(h('div',{class:'faq'},pays.map(function(p){return h('div',{class:'card-box'},
+    h('h3',{text:p.coin+' · сеть '+p.net}),h('div',{class:'addr',text:p.addr}),
+    p.rate>0?h('div',{class:'state',text:'Курс магазина: 1 '+p.coin+' = '+money(p.rate)}):null,
+    h('div',null,h('button',{class:'btn sm',onclick:function(){copyText(p.addr,'Адрес скопирован')},text:'Копировать адрес'})))})));
+}
+/* ---------- game: slot machine ---------- */
+function todayKey(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
+function spinState(){try{var o=JSON.parse(localStorage.getItem('ash_spins2')||'{}');if(o.t&&Date.now()-o.t<864e5)return {t:o.t,n:o.n|0}}catch(e){}return {t:0,n:0}}
+function spinsUsed(){return spinState().n}
+function addSpin(){var st=spinState();try{localStorage.setItem('ash_spins2',JSON.stringify({t:st.t||Date.now(),n:st.n+1}))}catch(e){}}
+function resetIn(){var st=spinState(),ms=st.t?st.t+864e5-Date.now():0;if(ms<=0)return '';var m=Math.ceil(ms/6e4);return Math.floor(m/60)+' ч '+(m%60)+' мин'}
+function rnd(n){try{var a=new Uint32Array(1),lim=Math.floor(4294967296/n)*n;do{crypto.getRandomValues(a)}while(a[0]>=lim);return a[0]%n}catch(e){return Math.floor(Math.random()*n)}}
+function claimCode(d){var base='w'+d+'_'+Math.floor(Date.now()/1000).toString(36);return base+'_'+fnv(base+'ash').slice(0,5)}
+function savedWin(){try{var o=JSON.parse(localStorage.getItem('ash_win')||'null');if(o&&o.code&&Date.now()-o.t<864e5)return o}catch(e){}return null}
+var spinning=false;
+function claimNode(code){
+  var bot=botName(),cn=contactName();
+  var box=h('div',{class:'card-box',style:'margin-top:12px'},h('h3',{text:'Твой приз'}),
+    h('div',{class:'note',text:'Кольцо Telegram за 100 звёзд. Заявка действует 24 часа, подарок выдаётся один раз в сутки на человека.'}));
+  if(bot)box.append(h('a',{class:'btn primary block',style:'text-align:center;text-decoration:none',href:'https://t.me/'+bot+'?start='+code,target:'_blank',rel:'noopener',onclick:tgOpen},'Получить подарок'));
+  else{
+    box.append(h('div',{class:'addr',text:code}),h('button',{class:'btn block',onclick:function(){copyText(code,'Код скопирован')},text:'Скопировать код'}));
+    if(cn)box.append(h('a',{class:'btn primary block',style:'text-align:center;text-decoration:none',href:'https://t.me/'+cn+'?text='+encodeURIComponent('Выиграл в автомат, мой код: '+code),target:'_blank',rel:'noopener',onclick:tgOpen},'Написать продавцу @'+cn));
+  }
+  return box;
+}
+function renderGamePage(){
+  var P=el.pGame;P.textContent='';var g=cur().game;
+  P.append(h('h2',{class:'pt',text:'Автомат'}));
+  if(!g.on){P.append(h('div',{class:'empty',style:'margin-top:12px',text:'Игра сейчас выключена.'}));return}
+  P.append(h('p',{style:'color:var(--ink2);margin:4px 0 0',text:'Крути барабаны. Если выпадут три одинаковых числа, получишь в подарок кольцо Telegram за 100 звёзд.'}));
+  var reels=[0,1,2].map(function(){return h('div',{class:'reel'},h('span',{text:'7'}))});
+  var status=h('div',{class:'slot-status',role:'status'});
+  var left=h('span'),odds=h('span',{text:'Шанс 1 к '+(g.digits*g.digits)});
+  var btn=h('button',{class:'btn primary block',style:'padding:14px;font-size:16px',text:'Крутить'});
+  var slot=h('div',{class:'slot'},h('div',{class:'reels'},reels),status,btn,h('div',{class:'slot-meta'},left,odds));
+  var claim=h('div');
+  function paintLeft(){var n=Math.max(0,g.spins-spinsUsed());left.textContent=n>0?('Бесплатных попыток: '+n+' из '+g.spins):('Бесплатные попытки вернутся через '+(resetIn()||'несколько минут'));btn.disabled=spinning||n<1}
+  var tick=setInterval(function(){if(!left.isConnected){clearInterval(tick);return}if(!spinning)paintLeft()},30000);
+  var w=savedWin();if(w){claim.append(claimNode(w.code))}
+  btn.addEventListener('click',function(){
+    if(spinning||spinsUsed()>=g.spins)return;
+    spinning=true;addSpin();slot.classList.remove('win');status.className='slot-status';status.textContent='';claim.textContent='';
+    var N=g.digits,res=[rnd(N)+1,rnd(N)+1,rnd(N)+1];
+    btn.disabled=true;
+    reels.forEach(function(r,i){
+      r.classList.add('spin');
+      var iv=setInterval(function(){r.firstChild.textContent=rnd(N)+1},70);
+      setTimeout(function(){
+        clearInterval(iv);r.classList.remove('spin');r.firstChild.textContent=res[i];r.classList.add('stop');
+        setTimeout(function(){r.classList.remove('stop')},300);
+        if(i===2)finish();
+      },900+i*550);
+    });
+    function finish(){
+      spinning=false;
+      if(res[0]===res[1]&&res[1]===res[2]){
+        var code=claimCode(res[0]);
+        try{localStorage.setItem('ash_win',JSON.stringify({code:code,t:Date.now()}))}catch(e){}
+        slot.classList.add('win');status.className='slot-status win';status.textContent='Три одинаковых! Ты выиграл кольцо Telegram';
+        claim.append(claimNode(code));
+      }else{status.textContent='Не повезло. Попробуй ещё раз'}
+      paintLeft();
+    }
+  });
+  paintLeft();
+  P.append(slot,claim);
+  var bot2=botName();
+  if(bot2)P.append(h('div',{class:'card-box',style:'margin-top:12px'},h('h3',{text:'Ещё попытки'}),
+    h('div',{class:'note',text:'Бесплатные попытки обновляются каждые 24 часа. Нужна ещё одна? Платная попытка стоит '+g.price+' $ и крутится прямо в боте: оплата через CryptoBot, результат определяет бот. Выигрыш бот отправляет сразу.'}),
+    h('a',{class:'btn block',style:'text-align:center;text-decoration:none',href:'https://t.me/'+bot2+'?start=buy',target:'_blank',rel:'noopener',onclick:tgOpen},'Купить попытку за '+g.price+' $')));
+}
+function renderInfoPage(){
+  var P=el.pInfo;P.textContent='';
+  var cn=contactName();
+  P.append(h('h2',{class:'pt',text:'Информация'}));
+  if(cn)P.append(h('div',{class:'card-box',style:'margin-top:12px'},h('h3',{text:'Связь с продавцом'}),
+    h('a',{class:'btn primary block',style:'text-align:center;text-decoration:none',href:'https://t.me/'+cn,target:'_blank',rel:'noopener',onclick:tgOpen},'Написать @'+cn)));
+  var f=cur().faq;
+  if(f.length)P.append(h('div',{class:'faq'},f.map(function(x){return h('details',null,h('summary',{text:x.q}),h('p',{class:'desc',style:'margin:10px 0 0',text:x.a}))})));
+  else if(!cn)P.append(h('div',{class:'empty',style:'margin-top:12px',text:'Здесь скоро появятся ответы на частые вопросы.'}));
+}
+
+/* ---------- admin ---------- */
+function askPin(){
+  var inp=h('input',{id:'pin',type:'password',inputmode:'numeric',autocomplete:'off',placeholder:'PIN-код'});
+  var msg=h('div',{class:'state'});
+  function go(){
+    var v=inp.value,p=data.shop.pin;
+    var ok=p?fnv(v)===p:v==='1234';
+    if(ok){closeSheet();openAdmin()}else{msg.textContent='Неверный PIN';inp.select()}
+  }
+  inp.addEventListener('keydown',function(e){if(e.key==='Enter')go()});
+  openSheet('Вход для владельца',[h('div',{class:'field'},h('label',{for:'pin',text:'PIN-код'}),inp),msg,h('button',{class:'btn primary block',onclick:go,text:'Войти'})]);
+  setTimeout(function(){inp.focus()},50);
+}
+var tab='items';
+var A={};
+function openAdmin(){
+  if(!draft)draft=clone(data);
+  admin=true;ss('ash_admin','1');document.body.classList.add('lock');
+  buildAdmin();
+}
+function closeAdmin(){
+  admin=false;ss('ash_admin',null);el.adminHost.textContent='';
+  if(!dirty()){draft=null;ss('ash_draft',null)}
+  document.body.classList.remove('lock');renderShop();
+}
+function buildAdmin(){
+  el.adminHost.textContent='';
+  A.state=h('span',{class:'state'});
+  A.pub=h('button',{class:'btn primary sm',onclick:publish,text:'Опубликовать'});
+  A.discard=h('button',{class:'btn sm ghost',onclick:function(){draft=clone(data);touch();paintTab()},text:'Отменить'});
+  A.body=h('div',{class:'panel'});
+  A.tabs=h('div',{class:'tabs',role:'tablist'});
+  var bar=h('div',{class:'admin-bar'},h('div',{class:'wrap'},h('h2',{text:'Админка'}),h('span',{class:'spacer'}),A.state,A.discard,A.pub,h('button',{class:'btn sm',onclick:closeAdmin,text:'Закрыть'})));
+  var wrap=h('div',{class:'wrap'},A.tabs,A.body);
+  el.adminHost.append(h('div',{class:'admin'},bar,wrap));
+  updateBar();paintTab();
+}
+function updateBar(){
+  if(!A.state||!$('.admin'))return;
+  var d=dirty();
+  A.state.textContent=d?'Есть неопубликованные изменения':'Всё опубликовано';
+  A.state.className='state'+(d?' dirty':'');
+  A.pub.disabled=!d;A.discard.disabled=!d;A.discard.hidden=!d;
+}
+function paintTab(){
+  A.tabs.textContent='';
+  [['items','Товары'],['cats','Категории'],['pay','Оплата'],['info','Инфо'],['shop','Магазин']].forEach(function(t){A.tabs.append(h('button',{class:'tab',role:'tab','aria-selected':String(tab===t[0]),text:t[1],onclick:function(){tab=t[0];paintTab()}}))});
+  A.body.textContent='';
+  if(tab==='items')paintItems();else if(tab==='cats')paintCats();else if(tab==='pay')paintPay();else if(tab==='info')paintInfo();else paintShop();
+}
+function confirmBtn(label,fn,cls){
+  var b=h('button',{class:'btn sm '+(cls||'danger'),text:label}),t;
+  b.addEventListener('click',function(){if(b.dataset.arm){clearTimeout(t);fn();return}b.dataset.arm='1';b.textContent='Точно?';t=setTimeout(function(){delete b.dataset.arm;b.textContent=label},3000)});
+  return b;
+}
+function paintItems(){
+  var d=draft;
+  A.body.append(h('div',{class:'row'},h('div',{class:'state',text:'Товаров: '+d.items.length}),h('button',{class:'btn primary sm',onclick:function(){editItem(null)},text:'+ Новый товар'})));
+  if(!d.items.length)A.body.append(h('div',{class:'empty',text:'Пока нет товаров. Нажми «Новый товар».'}));
+  d.items.forEach(function(i,idx){
+    A.body.append(h('div',{class:'arow'+(i.hidden?' off':'')},
+      h('div',{class:'t'},h('b',{text:i.name||'Без названия'}),h('small',{text:[i.cat||'без категории',money(i.price),i.stock+' шт.',i.hidden?'скрыт':''].filter(Boolean).join(' · ')})),
+      h('div',{class:'acts'},
+        h('button',{class:'btn sm','aria-label':'Выше',disabled:idx===0,onclick:function(){move(idx,-1)},text:'↑'}),
+        h('button',{class:'btn sm','aria-label':'Ниже',disabled:idx===d.items.length-1,onclick:function(){move(idx,1)},text:'↓'}),
+        h('button',{class:'btn sm',onclick:function(){editItem(i.id)},text:'Изменить'}),
+        h('button',{class:'btn sm',onclick:function(){i.hidden=!i.hidden;touch();paintTab()},text:i.hidden?'Показать':'Скрыть'}),
+        h('button',{class:'btn sm',onclick:function(){var c=clone(i);c.id=uid();c.name+=' (копия)';d.items.splice(idx+1,0,c);touch();paintTab()},text:'Копия'}),
+        confirmBtn('Удалить',function(){d.items.splice(idx,1);touch();paintTab()}))));
+  });
+}
+function move(idx,dir){var l=draft.items,j=idx+dir;if(j<0||j>=l.length)return;var t=l[idx];l[idx]=l[j];l[j]=t;touch();paintTab()}
+function field(id,label,node){return h('div',{class:'field'},h('label',{for:id,text:label}),node)}
+function editItem(id){
+  var it=id?draft.items.filter(function(x){return x.id===id})[0]:null;
+  var v=it?clone(it):{id:uid(),name:'',cat:draft.cats[0]||'',price:0,old:0,stock:1,geo:'',year:'',format:'',badge:'',desc:'',hidden:false};
+  var f={};
+  f.name=h('input',{id:'f-name',value:v.name,placeholder:'Например: Аккаунт 2020 года'});
+  f.cat=h('select',{id:'f-cat'},h('option',{value:'',text:'Без категории'}),draft.cats.map(function(c){return h('option',{value:c,text:c})}));f.cat.value=v.cat;
+  f.price=h('input',{id:'f-price',type:'number',inputmode:'decimal',min:'0',step:'any',value:v.price});
+  f.old=h('input',{id:'f-old',type:'number',inputmode:'decimal',min:'0',step:'any',value:v.old||''});
+  f.stock=h('input',{id:'f-stock',type:'number',inputmode:'numeric',min:'0',step:'1',value:v.stock});
+  f.geo=h('input',{id:'f-geo',value:v.geo,placeholder:'Россия (+7)'});
+  f.year=h('input',{id:'f-year',value:v.year,placeholder:'2020'});
+  f.format=h('input',{id:'f-format',value:v.format,placeholder:'Номер + код, session, tdata'});
+  f.badge=h('input',{id:'f-badge',value:v.badge,placeholder:'Хит, Скидка, Опт'});
+  f.desc=h('textarea',{id:'f-desc',placeholder:'Что входит, как выдаётся'});f.desc.value=v.desc;
+  f.hidden=h('input',{id:'f-hidden',type:'checkbox',checked:v.hidden});
+  var err=h('div',{class:'state',style:'color:var(--danger)'});
+  function save(){
+    var name=f.name.value.trim();if(!name){err.textContent='Введи название товара';f.name.focus();return}
+    var price=parseFloat(f.price.value);if(!(price>=0)){err.textContent='Введи цену';f.price.focus();return}
+    v.name=name;v.cat=f.cat.value;v.price=price;v.old=parseFloat(f.old.value)||0;v.stock=Math.max(0,parseInt(f.stock.value,10)||0);
+    v.geo=f.geo.value.trim();v.year=f.year.value.trim();v.format=f.format.value.trim();v.badge=f.badge.value.trim();v.desc=f.desc.value.trim();v.hidden=f.hidden.checked;
+    if(it)Object.assign(it,v);else draft.items.unshift(v);
+    closeSheet();touch();paintTab();toast('Товар сохранён в черновике');
+  }
+  openSheet(it?'Изменить товар':'Новый товар',[
+    field('f-name','Название',f.name),
+    h('div',{class:'grid2'},field('f-price','Цена, '+draft.shop.currency,f.price),field('f-old','Старая цена (зачёркнута)',f.old)),
+    h('div',{class:'grid2'},field('f-stock','Количество в наличии',f.stock),field('f-cat','Категория',f.cat)),
+    h('div',{class:'grid2'},field('f-geo','Страна',f.geo),field('f-year','Год регистрации',f.year)),
+    field('f-format','Формат выдачи',f.format),field('f-badge','Метка на карточке',f.badge),field('f-desc','Описание',f.desc),
+    h('label',{class:'check'},f.hidden,'Скрыть из каталога'),err,
+    h('button',{class:'btn primary block',onclick:save,text:'Сохранить'})]);
+}
+function paintCats(){
+  var d=draft;
+  A.body.append(h('div',{class:'note',text:'Категории показываются в каталоге кнопками над товарами. Пустые категории покупатель не видит.'}));
+  d.cats.forEach(function(c,idx){
+    var inp=h('input',{id:'c-'+idx,value:c,'aria-label':'Название категории',style:'flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 12px'});
+    inp.addEventListener('change',function(){
+      var nv=inp.value.trim();if(!nv||(d.cats.indexOf(nv)>=0&&nv!==c)){inp.value=c;return}
+      d.items.forEach(function(i){if(i.cat===c)i.cat=nv});d.cats[idx]=nv;c=nv;touch();
+    });
+    A.body.append(h('div',{class:'arow'},inp,h('div',{class:'acts'},
+      confirmBtn('Удалить',function(){d.items.forEach(function(i){if(i.cat===c)i.cat=''});d.cats.splice(idx,1);touch();paintTab()}))));
+  });
+  var add=h('input',{id:'c-new',placeholder:'Новая категория',style:'flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 12px'});
+  function addCat(){var n=add.value.trim();if(!n||d.cats.indexOf(n)>=0)return;d.cats.push(n);touch();paintTab()}
+  add.addEventListener('keydown',function(e){if(e.key==='Enter')addCat()});
+  A.body.append(h('div',{class:'arow'},add,h('button',{class:'btn primary sm',onclick:addCat,text:'Добавить'})));
+}
+function paintPay(){
+  var d=draft;
+  A.body.append(h('div',{class:'note',text:'Покупатель видит способ оплаты, только если он включён и указан адрес. Курс: сколько '+d.shop.currency+' стоит 1 монета. Курс берёшь и обновляешь ты сам, магазин не загружает его из интернета. Без курса покупателю покажется только итог в '+d.shop.currency+'.'}));
+  A.body.append(h('div',{class:'row'},h('div',{class:'state',text:'Способов: '+d.pay.length}),h('button',{class:'btn primary sm',onclick:function(){editPay(null)},text:'+ Способ'})));
+  d.pay.forEach(function(p,idx){
+    var st=[p.on?'включён':'выключен',p.addr?'адрес указан':'нет адреса',p.rate>0?'курс '+p.rate:'нет курса'].join(' · ');
+    A.body.append(h('div',{class:'arow'+(p.on?'':' off')},
+      h('div',{class:'t'},h('b',{text:p.coin+' · '+p.net}),h('small',{text:st})),
+      h('div',{class:'acts'},
+        h('button',{class:'btn sm','aria-label':'Выше',disabled:idx===0,onclick:function(){moveIn(d.pay,idx,-1);touch();paintTab()},text:'↑'}),
+        h('button',{class:'btn sm','aria-label':'Ниже',disabled:idx===d.pay.length-1,onclick:function(){moveIn(d.pay,idx,1);touch();paintTab()},text:'↓'}),
+        h('button',{class:'btn sm',onclick:function(){editPay(p.id)},text:'Изменить'}),
+        h('button',{class:'btn sm',onclick:function(){p.on=!p.on;touch();paintTab()},text:p.on?'Выключить':'Включить'}),
+        confirmBtn('Удалить',function(){d.pay.splice(idx,1);touch();paintTab()}))));
+  });
+}
+function moveIn(l,idx,dir){var j=idx+dir;if(j<0||j>=l.length)return;var t=l[idx];l[idx]=l[j];l[j]=t}
+function editPay(id){
+  var it=id?draft.pay.filter(function(x){return x.id===id})[0]:null;
+  var v=it?clone(it):{id:uid(),coin:'',net:'',addr:'',rate:0,dec:2,on:true};
+  var f={};
+  f.coin=h('input',{id:'y-coin',value:v.coin,placeholder:'USDT'});
+  f.net=h('input',{id:'y-net',value:v.net,placeholder:'TRC20'});
+  f.addr=h('input',{id:'y-addr',value:v.addr,placeholder:'Адрес кошелька',autocomplete:'off',autocapitalize:'off',spellcheck:'false',class:'mono'});
+  f.rate=h('input',{id:'y-rate',type:'number',inputmode:'decimal',min:'0',step:'any',value:v.rate||''});
+  f.dec=h('input',{id:'y-dec',type:'number',inputmode:'numeric',min:'0',max:'10',step:'1',value:v.dec});
+  f.on=h('input',{id:'y-on',type:'checkbox',checked:v.on});
+  var err=h('div',{class:'state',style:'color:var(--danger)'});
+  function save(){
+    if(!f.coin.value.trim()){err.textContent='Укажи монету, например USDT';f.coin.focus();return}
+    v.coin=f.coin.value.trim();v.net=f.net.value.trim();v.addr=f.addr.value.trim();v.rate=Math.max(0,parseFloat(f.rate.value)||0);v.dec=Math.min(10,Math.max(0,parseInt(f.dec.value,10)||0));v.on=f.on.checked;
+    if(it)Object.assign(it,v);else draft.pay.push(v);
+    closeSheet();touch();paintTab();toast('Способ оплаты сохранён в черновике');
+  }
+  openSheet(it?'Изменить способ оплаты':'Новый способ оплаты',[
+    h('div',{class:'grid2'},field('y-coin','Монета',f.coin),field('y-net','Сеть',f.net)),
+    field('y-addr','Адрес кошелька (проверь дважды)',f.addr),
+    h('div',{class:'grid2'},field('y-rate','Курс: '+draft.shop.currency+' за 1 монету',f.rate),field('y-dec','Знаков после запятой',f.dec)),
+    h('label',{class:'check'},f.on,'Показывать покупателям'),err,
+    h('button',{class:'btn primary block',onclick:save,text:'Сохранить'})]);
+}
+function paintInfo(){
+  var d=draft;
+  A.body.append(h('div',{class:'row'},h('div',{class:'state',text:'Вопросов: '+d.faq.length}),h('button',{class:'btn primary sm',onclick:function(){editFaq(null)},text:'+ Вопрос'})));
+  if(!d.faq.length)A.body.append(h('div',{class:'empty',text:'Добавь ответы на частые вопросы: условия, сроки выдачи, замена.'}));
+  d.faq.forEach(function(x,idx){
+    A.body.append(h('div',{class:'arow'},h('div',{class:'t'},h('b',{text:x.q||'Без названия'}),h('small',{text:x.a.slice(0,90)})),
+      h('div',{class:'acts'},
+        h('button',{class:'btn sm','aria-label':'Выше',disabled:idx===0,onclick:function(){moveIn(d.faq,idx,-1);touch();paintTab()},text:'↑'}),
+        h('button',{class:'btn sm','aria-label':'Ниже',disabled:idx===d.faq.length-1,onclick:function(){moveIn(d.faq,idx,1);touch();paintTab()},text:'↓'}),
+        h('button',{class:'btn sm',onclick:function(){editFaq(x.id)},text:'Изменить'}),
+        confirmBtn('Удалить',function(){d.faq.splice(idx,1);touch();paintTab()}))));
+  });
+}
+function editFaq(id){
+  var it=id?draft.faq.filter(function(x){return x.id===id})[0]:null;
+  var q1=h('input',{id:'q-q',value:it?it.q:'',placeholder:'Например: Есть ли замена?'});
+  var a1=h('textarea',{id:'q-a'});a1.value=it?it.a:'';
+  var err=h('div',{class:'state',style:'color:var(--danger)'});
+  openSheet(it?'Изменить вопрос':'Новый вопрос',[field('q-q','Вопрос',q1),field('q-a','Ответ',a1),err,
+    h('button',{class:'btn primary block',text:'Сохранить',onclick:function(){
+      if(!q1.value.trim()){err.textContent='Введи вопрос';return}
+      if(it){it.q=q1.value.trim();it.a=a1.value.trim()}else draft.faq.push({id:uid(),q:q1.value.trim(),a:a1.value.trim()});
+      closeSheet();touch();paintTab();}})]);
+}
+function bind(id,label,key,opts){
+  opts=opts||{};
+  var n=h(opts.area?'textarea':'input',{id:id,placeholder:opts.ph||''});n.value=draft.shop[key];
+  n.addEventListener('input',function(){draft.shop[key]=n.value;touch()});
+  return field(id,label,n);
+}
+function paintShop(){
+  var d=draft;
+  A.body.append(h('div',{class:'card-box'},h('h3',{text:'Витрина'}),
+    bind('s-name','Название магазина','name'),
+    bind('s-tag','Подзаголовок на главной','tagline',{area:true}),
+    bind('s-cur','Валюта (знак)','currency',{ph:'₽'}),
+    bind('s-contact','Твой Telegram для заказов','contact',{ph:'@username'}),
+    bind('s-bot','Бот оплаты CryptoBot (username)','bot',{ph:'@my_shop_bot'}),
+    bind('s-note','Текст в корзине (оплата, выдача)','note',{area:true}),
+    bind('s-info','Условия и FAQ (пункт меню)','info',{area:true})));
+  if(!window.claude){
+    var gh=ghCfg()||{repo:'',token:''};
+    var gr=h('input',{id:'gh-repo',value:gh.repo,placeholder:'твой-логин/alliance-shop',autocomplete:'off',autocapitalize:'off',spellcheck:'false'});
+    var gt=h('input',{id:'gh-token',type:'password',value:gh.token,placeholder:'github_pat_...',autocomplete:'off'});
+    var gm=h('div',{class:'state'});
+    A.body.append(h('div',{class:'card-box'},h('h3',{text:'Публикация на сайте'}),
+      h('div',{class:'note',text:'Здесь ты один раз связываешь админку с GitHub. Токен хранится только в этом браузере на этом телефоне и никуда, кроме GitHub, не отправляется. После этого кнопка «Опубликовать» сама обновляет сайт.'}),
+      field('gh-repo','Репозиторий',gr),field('gh-token','Токен GitHub',gt),gm,
+      h('button',{class:'btn primary sm',onclick:async function(){
+        var c={repo:gr.value.trim().replace(/^https?:\/\/github\.com\//i,'').replace(/\/$/,''),token:gt.value.trim()};
+        if(!c.repo||!c.token){gm.textContent='Заполни оба поля';return}
+        gm.textContent='Проверяю…';
+        try{var r=await fetch(ghUrl(c),{headers:ghHeaders(c),cache:'no-store'});
+          if(!r.ok&&r.status!==404){var e=new Error('x');e.status=r.status;throw e}
+          if(r.status===404){var r2=await fetch('https://api.github.com/repos/'+c.repo,{headers:ghHeaders(c)});if(!r2.ok){var e3=new Error('x');e3.status=r2.status;throw e3}}
+          try{localStorage.setItem('ash_gh',JSON.stringify(c))}catch(x){}
+          gm.textContent='Готово. GitHub подключён.';
+        }catch(e){gm.textContent=ghErr(e)}
+      },text:'Сохранить и проверить'})));
+  }
+  var gi=d.game;
+  var gOn=h('input',{id:'g-on',type:'checkbox',checked:gi.on});
+  gOn.addEventListener('change',function(){gi.on=gOn.checked;touch()});
+  var gSp=h('input',{id:'g-spins',type:'number',inputmode:'numeric',min:'1',max:'20',step:'1',value:gi.spins});
+  var gDg=h('input',{id:'g-digits',type:'number',inputmode:'numeric',min:'2',max:'9',step:'1',value:gi.digits});
+  var gNote=h('div',{class:'note'});
+  function gPaint(){gNote.textContent='Шанс выигрыша за одну попытку: 1 к '+(gi.digits*gi.digits)+'. Чем меньше цифр, тем выше шанс.'}
+  gPaint();
+  gSp.addEventListener('input',function(){var v=parseInt(gSp.value,10);if(v>=1&&v<=20){gi.spins=v;touch()}});
+  var gPr=h('input',{id:'g-price',inputmode:'decimal',value:gi.price});
+  gPr.addEventListener('input',function(){var v=gPr.value.replace(',','.').replace(/[^0-9.]/g,'');if(parseFloat(v)>0){gi.price=v.slice(0,6);touch()}});
+  gDg.addEventListener('input',function(){var v=parseInt(gDg.value,10);if(v>=2&&v<=9){gi.digits=v;gPaint();touch()}});
+  A.body.append(h('div',{class:'card-box'},h('h3',{text:'Игра «Автомат»'}),
+    h('label',{class:'check'},gOn,'Показывать игру покупателям'),
+    h('div',{class:'grid2'},field('g-spins','Бесплатных попыток за 24 часа',gSp),field('g-digits','Цифры от 1 до',gDg)),field('g-price','Цена платной попытки, $ (показывается покупателям)',gPr),gNote,
+    h('div',{class:'note',text:'Платная попытка работает только с ботом: цену и цифры для неё берёт сам бот из своих настроек (SPIN_PRICE_USD, SPIN_DIGITS), поставь там те же значения. Подарок выдаёт бот оплаты по заявке (нужен username бота выше). Без бота покупатель получит код и напишет тебе. Попытки считаются в браузере покупателя, поэтому настоящий лимит подарков задаёт бот.'})));
+  A.body.append(h('div',{class:'card-box'},h('h3',{text:'Заставка'}),h('div',{class:'note',text:'При первом открытии магазина покупатель видит короткую заставку. Её можно пропустить нажатием.'}),h('button',{class:'btn sm',onclick:function(){if(!reduced)playSplash();else toast('Анимации отключены в настройках телефона')},text:'Показать заставку'})));
+  var np=h('input',{id:'s-pin',type:'password',inputmode:'numeric',placeholder:'Новый PIN, от 4 цифр',autocomplete:'off'});
+  var pm=h('div',{class:'state'});
+  A.body.append(h('div',{class:'card-box'},h('h3',{text:'PIN владельца'}),
+    h('div',{class:'note',text:'Сейчас вход по умолчанию: 1234. Смени его. Изменения вступят в силу после публикации.'}),
+    field('s-pin','Новый PIN',np),pm,
+    h('button',{class:'btn sm',onclick:function(){var v=np.value.trim();if(!/^\d{4,12}$/.test(v)){pm.textContent='PIN: от 4 до 12 цифр';return}d.shop.pin=fnv(v);np.value='';pm.textContent='PIN изменён, опубликуй изменения';touch()},text:'Сменить PIN'})));
+  var bx=h('textarea',{id:'s-botx',class:'mono',style:'min-height:90px',readonly:true});
+  function botJson(){return JSON.stringify({cur:draft.shop.currency,items:draft.items.filter(function(i){return !i.hidden}).map(function(i){return {id:i.id,name:i.name,price:i.price,stock:i.stock}})})}
+  bx.value=botJson();
+  A.body.append(h('div',{class:'card-box'},h('h3',{text:'Для бота оплаты'}),
+    h('div',{class:'note',text:'После каждого изменения цен или остатков и публикации: нажми «Скопировать» и отправь этот текст своему боту. Бот начнёт считать счета по новым ценам.'}),
+    field('s-botx','Каталог для бота',bx),
+    h('button',{class:'btn sm',onclick:function(){bx.value=botJson();copyText(bx.value,'Каталог скопирован')},text:'Скопировать'})));
+  var ta=h('textarea',{id:'s-backup',class:'mono',style:'min-height:120px'});ta.value=JSON.stringify(d);
+  var bm=h('div',{class:'state'});
+  A.body.append(h('div',{class:'card-box'},h('h3',{text:'Резервная копия'}),
+    h('div',{class:'note',text:'Скопируй этот текст и сохрани в заметках. Чтобы восстановить магазин, вставь текст сюда и нажми «Загрузить».'}),
+    field('s-backup','Данные магазина',ta),bm,
+    h('div',{class:'row'},
+      h('button',{class:'btn sm',onclick:function(){ta.value=JSON.stringify(draft);copyText(ta.value,'Копия скопирована')},text:'Скопировать'}),
+      h('button',{class:'btn sm',onclick:function(){try{var n=norm(JSON.parse(ta.value));draft=n;touch();paintTab();toast('Данные загружены в черновик')}catch(e){bm.textContent='Не удалось прочитать текст. Вставь копию целиком.'}},text:'Загрузить'}))));
+}
+
+/* ---------- publish ---------- */
+function buildDoc(d){
+  var reset='';var ss_=document.head.querySelectorAll('style');
+  for(var i=0;i<ss_.length;i++){if(ss_[i].textContent.indexOf('[hidden]')>=0){reset=ss_[i].textContent;break}}
+  if(!reset)reset=':root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}';
+  var CLOSE='</scr'+'ipt>';
+  var json=JSON.stringify(d).replace(/</g,'\\u003c');
+  return '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>'+reset+'</style></head><body>'
+    +$('#app-title').outerHTML+'\n'+$('#app-meta').outerHTML+'\n'+$('#app-font').outerHTML+'\n'
+    +'<style id="app-css">'+$('#app-css').textContent+'</style>\n'
+    +'<div id="app"></div>\n'
+    +'<script type="application/json" id="shop-data">'+json+CLOSE+'\n'
+    +'<script id="app-js">'+$('#app-js').textContent+CLOSE
+    +'</body></html>';
+}
+function ghCfg(){try{var o=JSON.parse(localStorage.getItem('ash_gh')||'null');if(o&&o.repo&&o.token)return o}catch(e){}return null}
+function b64(str){return btoa(unescape(encodeURIComponent(str)))}
+function ghHeaders(c){return {'Authorization':'Bearer '+c.token,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'}}
+function ghUrl(c){return 'https://api.github.com/repos/'+c.repo+'/contents/data.json'}
+function ghErr(e){
+  var st=e&&e.status;
+  if(st===401||st===403)return 'GitHub не принял токен. Проверь, что у токена есть доступ Contents: Read and write к этому репозиторию.';
+  if(st===404)return 'Репозиторий не найден. Проверь название вида имя/репозиторий и доступ токена.';
+  if(st===409||st===422)return 'Файл data.json успел измениться. Нажми «Опубликовать» ещё раз.';
+  return 'Не получилось связаться с GitHub. Проверь интернет и попробуй ещё раз.';
+}
+async function publishGithub(){
+  var c=ghCfg();publishing=true;A.pub.disabled=true;A.pub.textContent='Публикую…';
+  try{
+    var r=await fetch(ghUrl(c),{headers:ghHeaders(c),cache:'no-store'});var sha=null;
+    if(r.ok){sha=(await r.json()).sha}else if(r.status!==404){var e1=new Error('get');e1.status=r.status;throw e1}
+    var body={message:'Обновление магазина',content:b64(JSON.stringify(draft,null,1))};if(sha)body.sha=sha;
+    r=await fetch(ghUrl(c),{method:'PUT',headers:Object.assign({'Content-Type':'application/json'},ghHeaders(c)),body:JSON.stringify(body)});
+    if(!r.ok){var e2=new Error('put');e2.status=r.status;throw e2}
+    data=clone(draft);touch();
+    toast('Опубликовано. Сайт обновится через 1-2 минуты.');
+  }catch(e){toast(ghErr(e))}
+  finally{publishing=false;A.pub.textContent='Опубликовать';updateBar()}
+}
+var publishing=false;
+async function publish(){
+  if(publishing||!dirty())return;
+  var api=null;
+  try{api=window.claude&&await window.claude.use('artifact')}catch(e){}
+  if(!api){
+    if(ghCfg()){return publishGithub()}
+    toast('Укажи GitHub: Магазин → Публикация на сайте');return}
+  publishing=true;A.pub.disabled=true;A.pub.textContent='Публикую…';
+  try{await api.publish(buildDoc(draft))}
+  catch(e){
+    publishing=false;A.pub.textContent='Опубликовать';A.pub.disabled=false;
+    var c=e&&e.code;
+    if(c==='not_writer'||c==='not_granted'||c==='consent_required'||c==='not_declared'||c==='capability_disabled')toast('Опубликовать можно только из твоего аккаунта Claude. Открой ссылку магазина в приложении Claude.');
+    else if(c==='rate_limited')toast('Слишком часто. Подожди минуту и повтори.');
+    else if(c==='conflict')toast('Магазин обновили в другом месте. Страница перезагрузится.');
+    else toast('Не получилось опубликовать. Попробуй ещё раз.');
+  }
+}
+
+/* ---------- intro & motion ---------- */
+var ASSASSIN='<svg viewBox="0 0 220 160" aria-hidden="true">'
+ +'<path class="f" d="M96 82C72 80 46 90 14 78c26 22 54 26 84 20Z"/>'
+ +'<path class="f" d="M94 92C70 98 52 112 24 124c30 0 52-6 74-18Z"/>'
+ +'<path class="fs" stroke-width="11" d="M100 100 66 122 34 132"/>'
+ +'<path class="fs" stroke-width="11" d="M118 100l30 16-6 26"/><path class="fs" stroke-width="7" d="M142 142h16"/>'
+ +'<path class="f" d="M118 54l26 8-8 36-38 4-4-20Z"/>'
+ +'<path class="fs" stroke-width="8" d="M126 68 100 82"/>'
+ +'<path class="fs" stroke-width="9" d="M138 64l40-8"/>'
+ +'<path class="f" d="M141 38c0-11-9-17-18-15-7 2-11 7-13 13L94 30l14 16c2 6 8 10 16 10 10 0 17-7 17-18Z"/>'
+ +'<path d="M98 97l38-5" stroke="#4C86FF" stroke-width="3" stroke-linecap="round" fill="none"/>'
+ +'<path d="M133 40l6-1" stroke="#9fc2ff" stroke-width="2.2" stroke-linecap="round" fill="none"/>'
+ +'<path d="M176 55 218 41" stroke="#DCE8FF" stroke-width="2.6" stroke-linecap="round" fill="none"/></svg>';
+var introT;
+function playEntrance(){root.classList.add('in');clearTimeout(introT);introT=setTimeout(function(){root.classList.remove('in')},1500)}
+function playSplash(){
+  var name=cur().shop.name;
+  function block(c){return h('div',{class:'sp-text '+c,'aria-hidden':c==='sp-top'?'true':null},h('small',{text:'Добро пожаловать'}),h('small',{text:'в наш магазин'}),h('strong',{text:name}))}
+  var slash=h('div');slash.innerHTML='<svg class="sp-slash" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><line x1="-12" y1="64.9" x2="112" y2="35.1" stroke="#4C86FF" stroke-width="9" stroke-linecap="round" vector-effect="non-scaling-stroke" opacity=".55"/><line x1="-12" y1="64.9" x2="112" y2="35.1" stroke="#fff" stroke-width="3" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>';
+  var ass=h('div',{class:'sp-ass'},svg(ASSASSIN));
+  var g1=h('div',{class:'sp-ass g1'},svg(ASSASSIN)),g2=h('div',{class:'sp-ass g2'},svg(ASSASSIN));
+  var sp=h('div',{class:'splash',role:'status','aria-label':'Добро пожаловать в наш магазин '+name},
+    h('div',{class:'sp-grid'}),
+    h('div',{class:'sp-stage'},block('sp-bot'),block('sp-top'),slash.firstChild),
+    g2,g1,ass,h('div',{class:'sp-flash'}),h('button',{class:'sp-skip',text:'Пропустить'}));
+  var done=false,t;
+  function end(){if(done)return;done=true;clearTimeout(t);sp.classList.add('sp-out');setTimeout(function(){sp.remove();root.classList.remove('pre');playEntrance()},450)}
+  sp.addEventListener('click',end);
+  root.append(sp);t=setTimeout(end,3200);
+}
+var reduced=false;try{reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){}
+var seen=false;try{seen=sessionStorage.getItem('ash_splash')==='1'}catch(e){}
+
+/* ---------- boot ---------- */
+function loadRemote(){
+  return new Promise(function(res){
+    var done=false;function fin(){if(!done){done=true;res()}}
+    setTimeout(fin,2500);
+    fetch('data.json?'+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(j){
+      if(j&&j.items&&!dirty()){data=norm(j);if(draft&&JSON.stringify(draft)===JSON.stringify(data))draft=null}
+      fin()}).catch(fin);
+  });
+}
+function start(){
+buildShell();renderShop();
+if(!admin&&!reduced&&!seen&&location.hash!=='#admin'){ss('ash_splash','1');root.classList.add('pre');playSplash()}else if(!reduced){playEntrance()}
+if(admin&&draft!==undefined){try{openAdmin()}catch(e){}}
+if(location.hash==='#admin')askPin();
+try{var tg=window.Telegram&&window.Telegram.WebApp;if(tg){tg.ready();tg.expand()}}catch(e){}
+}
+if(window.claude){start()}else{loadRemote().then(start)}
+})();
+</script>
+</body></html>
